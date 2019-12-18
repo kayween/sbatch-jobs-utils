@@ -5,7 +5,7 @@
 .
 +-- exps
 |   +-- generate_script.py
-|   +-- job-type-1.py # python script that contains arguments for experiments and collect_results function
+|   +-- job-type-1.py # python script containing arguments for experiments and collect_results()
 |   +-- job-type-2.py
 +-- script
 |   +-- job-type-1 # folder containing slurm scripts generated
