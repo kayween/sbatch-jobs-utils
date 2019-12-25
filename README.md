@@ -19,3 +19,15 @@
 +-- code1.py
 +-- code2.py
 ```
+
+## work flow
+
+generate scripts
+```
+python generate_scripts.py job-type-1.py 
+```
+
+collect results
+```
+python collect_results.py job-type-1.py 
+```
