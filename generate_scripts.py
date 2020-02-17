@@ -128,6 +128,10 @@ def generate_script(module_name, overwrite, verbose):
         std_output_path = get_std_output_path(output_root, script_name)
 
         str_cmd_args = get_str_cmd_args(names, vals)
+
+        py_cmd = "{} {}".format(cmd, str_cmd_args)
+        print(py_cmd)
+
         str_cmd_args = "{} --save_img_loc {} --save_info_loc {} --{}".format(str_cmd_args,
                                                                              img_output_path,
                                                                              info_output_path,
