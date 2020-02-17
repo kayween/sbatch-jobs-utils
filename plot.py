@@ -1,11 +1,9 @@
 import importlib
+from script_utils import root_local
 
 
 def _get_output_root(output_root):
-    return "/home/k77wu/Desktop/" \
-           + "fast-wasserstein-adversarial/" \
-           + "output/" \
-           + output_root
+    return root_local + "output/" + output_root
 
 
 def print_func(acc, avg_iter, avg_time, overflow=False, converge=True):

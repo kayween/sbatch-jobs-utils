@@ -1,7 +1,8 @@
 import os
 
 root = "/h/kaiwen/tml2/fast-wasserstein-adversarial/"
-# root = "/home/k77wu/vaughan/fast-wasserstein-adversarial/"
+root_local = "/home/k77wu/Desktop/fast-wasserstein-adversarial/"
+
 
 sbatch_args = """#!/bin/bash\n
 #SBATCH -p p100
