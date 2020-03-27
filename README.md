@@ -27,7 +27,7 @@ generate scripts
 python generate_scripts.py job-type-1.py 
 ```
 
-collect results
+run scripts
 ```
-python collect_results.py job-type-1.py 
+bash sbatch_folder ../scripts/name-of-job-folder/latest
 ```
