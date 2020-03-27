@@ -1,29 +1,49 @@
 import datetime
 import os
 import shutil
-import importlib
 import itertools
 from pathlib import Path
 
+script_root = None
+code_root = None
+output_root = None
 
-def extract_args(module_name):
-    """Parse the arguments in a given file
-    script_root: the location where the generated scripts are stored
-    code_root: the code location
-    """
-    assert module_name.endswith(".py")
+sbatch_args = None
 
-    module = importlib.import_module(module_name[:-3])
+cmd = None
+cmd_args = None
+name = None
+other_args = None
 
-    return (module.script_root,
-            module.code_root,
-            module.output_root,
-            module.sbatch_args,
-            module.cmd,
-            module.cmd_args,
-            module.noabbr,
-            module.collect_results,
-            )
+
+# def extract_args(module_name):
+#     """Parse the arguments in a given file
+#     script_root: the location where the generated scripts are stored
+#     code_root: the code location
+#     """
+#     assert module_name.endswith(".py")
+
+#     module = importlib.import_module(module_name[:-3])
+
+#     return (module.script_root,
+#             module.code_root,
+#             module.output_root,
+#             module.sbatch_args,
+#             module.cmd,
+#             module.cmd_args,
+#             module.noabbr,
+#             module.collect_results,
+#             )
+
+# def get_img_output_path(output_root, script_name):
+#     output_folder = get_output_folder(output_root, script_name)
+#     return os.path.join(output_folder, "adversarial.pt")
+
+
+# def get_info_output_path(output_root, script_name):
+#     output_folder = get_output_folder(output_root, script_name)
+#     return os.path.join(output_folder, "record.pt")
+
 
 
 def get_time_stamp():
@@ -66,27 +86,16 @@ def get_aligned_str(str_cmd_args, is_echo):
     return ret
 
 
-def get_script_name(cmd, names, vals, noabbr):
+def get_script_name(cmd, args, vals, name):
     ret = cmd[:-3]
-    for name, val in zip(names, vals):
-        if name in noabbr:
-            continue
-        ret += "_{}-{}".format(name, val)
+    for arg, val in zip(args, vals):
+        if arg in name:
+            ret += "_{}-{}".format(arg, val)
     return ret
 
 
 def get_output_folder(output_root, script_name):
     return os.path.join(output_root, script_name)
-
-
-def get_img_output_path(output_root, script_name):
-    output_folder = get_output_folder(output_root, script_name)
-    return os.path.join(output_folder, "adversarial.pt")
-
-
-def get_info_output_path(output_root, script_name):
-    output_folder = get_output_folder(output_root, script_name)
-    return os.path.join(output_folder, "record.pt")
 
 
 def get_std_output_path(output_root, script_name):
@@ -98,17 +107,15 @@ def get_sbatch_args_with_slurm_output_path(sbatch_args):
     return sbatch_args + "#SBATCH -o ../slurm/slurm-%A.out"
 
 
-def generate_script(module_name, overwrite, verbose):
-    script_root, code_root, output_root, sbatch_args, cmd, cmd_args, noabbr, collect_results = extract_args(module_name)
-
+def generate_script(overwrite, verbose):
     script_folder = "{}/{}".format(script_root, get_time_stamp())
     os.mkdir(script_folder)
 
-    names = list(cmd_args.keys())
+    args = list(cmd_args.keys())
     lsts = [cmd_args[key] for key in cmd_args]
 
     for vals in itertools.product(*lsts):
-        script_name = get_script_name(cmd, names, vals, noabbr)
+        script_name = get_script_name(cmd, args, vals, name)
 
         script_path = "{}/{}.sh".format(script_folder, script_name)
 
@@ -123,19 +130,17 @@ def generate_script(module_name, overwrite, verbose):
 
         os.mkdir(output_folder)
 
-        img_output_path = get_img_output_path(output_root, script_name)
-        info_output_path = get_info_output_path(output_root, script_name)
         std_output_path = get_std_output_path(output_root, script_name)
 
-        str_cmd_args = get_str_cmd_args(names, vals)
+        str_cmd_args = get_str_cmd_args(args, vals)
 
         py_cmd = "{} {}".format(cmd, str_cmd_args)
         print(py_cmd)
 
-        str_cmd_args = "{} --save_img_loc {} --save_info_loc {} --{}".format(str_cmd_args,
-                                                                             img_output_path,
-                                                                             info_output_path,
-                                                                             std_output_path)
+        for func in other_args:
+            str_cmd_args += func(output_folder)
+
+        str_cmd_args = "{} --{}".format(str_cmd_args, std_output_path)
 
         py_cmd = "{} {}".format(cmd, str_cmd_args)
 
@@ -167,6 +172,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    generate_script(args.module_name,
-                    args.overwrite,
-                    args.verbose)
+    exec("from {} import *".format(args.module_name[:-3]))
+
+    generate_script(args.overwrite, args.verbose)
