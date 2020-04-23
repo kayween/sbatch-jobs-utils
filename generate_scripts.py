@@ -1,110 +1,26 @@
-import datetime
 import os
 import shutil
 import itertools
-from pathlib import Path
 
+from utils import get_time_stamp
+from utils import create_latest_symlink
+from utils import get_str_cmd_args
+from utils import get_aligned_str
+from utils import get_script_name
+from utils import get_output_folder
+from utils import get_std_output_path
+from utils import get_sbatch_args_with_slurm_output_path
+
+root = None
 script_root = None
-code_root = None
 output_root = None
 
 sbatch_args = None
 
 cmd = None
 cmd_args = None
-name = None
+named_args = None
 other_args = None
-
-
-# def extract_args(module_name):
-#     """Parse the arguments in a given file
-#     script_root: the location where the generated scripts are stored
-#     code_root: the code location
-#     """
-#     assert module_name.endswith(".py")
-
-#     module = importlib.import_module(module_name[:-3])
-
-#     return (module.script_root,
-#             module.code_root,
-#             module.output_root,
-#             module.sbatch_args,
-#             module.cmd,
-#             module.cmd_args,
-#             module.noabbr,
-#             module.collect_results,
-#             )
-
-# def get_img_output_path(output_root, script_name):
-#     output_folder = get_output_folder(output_root, script_name)
-#     return os.path.join(output_folder, "adversarial.pt")
-
-
-# def get_info_output_path(output_root, script_name):
-#     output_folder = get_output_folder(output_root, script_name)
-#     return os.path.join(output_folder, "record.pt")
-
-
-
-def get_time_stamp():
-    dt_str = str(datetime.datetime.now())
-    ret = dt_str.split()[0] + '-' + dt_str.split()[1].split('.')[0]
-    return ret
-
-
-def create_latest_symlink(batch_job_folder, folder):
-    symlink = Path(os.path.join(batch_job_folder, "latest"))
-    if symlink.exists():
-        assert symlink.is_symlink()
-        symlink.unlink()
-    symlink.symlink_to(os.path.join(batch_job_folder, folder))
-
-
-def get_str_cmd_args(names, vals):
-    model_args = ""
-    for name, val in zip(names, vals):
-        model_args += "--{} {} ".format(name, val)
-    return model_args
-
-
-def get_aligned_str(str_cmd_args, is_echo):
-    ret = ""
-
-    lst = str_cmd_args.split('--')
-    assert len(lst) > 3
-
-    ret += "{}--{}\\\n".format(lst[0], lst[1])
-
-    for i in range(2, len(lst) - 1):
-        ret += " " * (len(lst[0])) + "--{}\\\n".format(lst[i])
-
-    if is_echo is True:
-        ret += "\n"
-    else:
-        ret += " " * (len(lst[0])) + "> {}".format(lst[-1])
-
-    return ret
-
-
-def get_script_name(cmd, args, vals, name):
-    ret = cmd[:-3]
-    for arg, val in zip(args, vals):
-        if arg in name:
-            ret += "_{}-{}".format(arg, val)
-    return ret
-
-
-def get_output_folder(output_root, script_name):
-    return os.path.join(output_root, script_name)
-
-
-def get_std_output_path(output_root, script_name):
-    output_folder = get_output_folder(output_root, script_name)
-    return os.path.join(output_folder, "std.output")
-
-
-def get_sbatch_args_with_slurm_output_path(sbatch_args):
-    return sbatch_args + "#SBATCH -o ../slurm/slurm-%A.out"
 
 
 def generate_script(overwrite, verbose):
@@ -115,7 +31,7 @@ def generate_script(overwrite, verbose):
     lsts = [cmd_args[key] for key in cmd_args]
 
     for vals in itertools.product(*lsts):
-        script_name = get_script_name(cmd, args, vals, name)
+        script_name = get_script_name(cmd, args, vals, named_args)
 
         script_path = "{}/{}.sh".format(script_folder, script_name)
 
@@ -126,7 +42,7 @@ def generate_script(overwrite, verbose):
                 """CAUTION: existing files in the output folder will be deleted"""
                 shutil.rmtree(output_folder)
             else:
-                raise Exception("WARNING: existing files may be deleted; consider using --overwrite option")
+                raise Exception("WARNING: existing files in the output folder may be deleted; consider using --overwrite option\nconflict folder: {}".format(output_folder))
 
         os.mkdir(output_folder)
 
@@ -146,7 +62,7 @@ def generate_script(overwrite, verbose):
 
         content = (
             "{}\n\n".format(get_sbatch_args_with_slurm_output_path(sbatch_args)) +
-            "cd {}\n\n".format(code_root) +
+            "cd {}\n\n".format(root) +
             get_aligned_str("echo {}\n\n".format(py_cmd), is_echo=True) +
             get_aligned_str("python {}\n\n".format(py_cmd), is_echo=False) +
             "echo 'Job Done!'\n"
