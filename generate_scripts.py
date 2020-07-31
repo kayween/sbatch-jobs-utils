@@ -62,6 +62,7 @@ def generate_script(overwrite, verbose):
 
         content = (
             "{}\n\n".format(get_sbatch_args_with_slurm_output_path(sbatch_args)) +
+            "touch %A\n\n" +
             "cd {}\n\n".format(root) +
             get_aligned_str("echo {}\n\n".format(py_cmd), is_echo=True) +
             get_aligned_str("python {}\n\n".format(py_cmd), is_echo=False) +
@@ -78,13 +79,12 @@ def generate_script(overwrite, verbose):
 
 if __name__ == "__main__":
     import argparse
-    from str2bool import str2bool
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('module_name', type=str)
-    parser.add_argument('--overwrite', type=str2bool, default=False)
-    parser.add_argument('--verbose', type=str2bool, default=False)
+    parser.add_argument('--overwrite', type=int, default=0)
+    parser.add_argument('--verbose', type=int, default=0)
 
     args = parser.parse_args()
 
