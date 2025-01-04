@@ -119,7 +119,7 @@ class ConfigFileParser(object):
         else:
             # Otherwise, we collect all arguments that are not grouped arguments
             shared_args_dict = {
-                key: value for key, value in self.config_dict['arguments'].item()
+                key: value for key, value in self.config_dict['arguments'].items()
                 if not key.startswith("group")
             }
 
