@@ -148,7 +148,7 @@ class ConfigFileParser(object):
         return self.config_dict['io']['named_args']
 
 
-def main(config_path: str, num_scripts: int):
+def main(config_path: str, num_scripts: int = 0):
     """
     Args:
         config_path: Path to the config file.
@@ -159,15 +159,17 @@ def main(config_path: str, num_scripts: int):
     _ = parser.lst_args_dicts
 
     time_stamp = get_time_stamp()
-    current_folder = os.getcwd()
+    current_folder = os.path.dirname(os.path.realpath(__file__))
 
     # Dumping scripts to ./scripts
-    scripts_folder = os.path.join(current_folder, "./scripts", time_stamp)
+    scripts_folder = os.path.join(current_folder, "scripts", time_stamp)
     os.mkdir(scripts_folder)
+    create_latest_symlink(scripts_folder)
 
     # Dumping experimental results to ./experiments
-    output_folder = os.path.join(current_folder, "./experiments", time_stamp)
+    output_folder = os.path.join(current_folder, "experiments", time_stamp)
     os.mkdir(output_folder)
+    create_latest_symlink(output_folder)
 
     lst_runs = [
         Run(parser.py_file, args_dict, parser.named_args, output_folder)
