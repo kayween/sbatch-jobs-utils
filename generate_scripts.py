@@ -1,5 +1,8 @@
 import os
 import shutil
+
+from functools import cached_property
+
 import itertools
 from itertools import product
 
@@ -15,6 +18,11 @@ from utils import get_script_name
 from utils import get_output_folder
 from utils import get_std_output_path
 from utils import get_sbatch_args_with_slurm_output_path
+
+from utils import (
+    unsqueeze_values,
+    cartesian_product,
+)
 
 
 class Run(object):
@@ -95,18 +103,45 @@ class ConfigFileParser(object):
         """
         return self.config_dict['python']['file']
 
-    @property
+    @cached_property
+    def lst_grouped_args_dicts(self):
+        return [
+            unsqueeze_values(value) for key, value in self.config_dict['arguments'].items()
+            if key.startswith("group")
+        ]
+
+    @cached_property
+    def shared_args_dict(self):
+        if 'shared' in self.config_dict['arguments']:
+            # If there is an explicit 'shared' key, then we've found shared arguments
+            shared_args_dict = self.config_dict['arguments']['shared']
+
+        else:
+            # Otherwise, we collect all arguments that are not grouped arguments
+            shared_args_dict = {
+                key: value for key, value in self.config_dict['arguments'].item()
+                if not key.startswith("group")
+            }
+
+        return unsqueeze_values(shared_args_dict)
+
+    @cached_property
     def lst_args_dicts(self):
-        args_dicts = self.config_dict['arguments']
+        """
+        Parse the config file and return a list of dictionaries. Each dictionary contains arguments for each run.
+        """
+        if not self.lst_grouped_args_dicts:
+            cartesian_product(self.shared_args_dict)
 
-        # Convert all values to lists
-        args_dicts = {
-            key: value if isinstance(value, list) else [value]
-            for key, value in args_dicts.items()
-        }
+        lst = []
 
-        keys, values = args_dicts.keys(), args_dicts.values()
-        return [dict(zip(keys, c)) for c in product(*values)]
+        for grouped_args_dict in self.lst_grouped_args_dicts:
+            # Combine grouped arguments and shared arguments and then do a Cartesian product
+            combined_args_dict = dict(**grouped_args_dict, **self.shared_args_dict)
+
+            lst += cartesian_product(combined_args_dict)
+
+        return lst
 
     @property
     def named_args(self):
@@ -119,18 +154,18 @@ def main(config_path: str, num_scripts: int):
         config_path: Path to the config file.
         num_scripts: Number of bash scripts to generate.
     """
-
+    # Do parsing first---the program terminates immediately if parsing fails
     parser = ConfigFileParser(config_path)
+    _ = parser.lst_args_dicts
 
     time_stamp = get_time_stamp()
-
     current_folder = os.getcwd()
 
-    # Dumping scripts to to ./scripts
+    # Dumping scripts to ./scripts
     scripts_folder = os.path.join(current_folder, "./scripts", time_stamp)
     os.mkdir(scripts_folder)
 
-    # Dumping experimental results to to ./experiments
+    # Dumping experimental results to ./experiments
     output_folder = os.path.join(current_folder, "./experiments", time_stamp)
     os.mkdir(output_folder)
 
