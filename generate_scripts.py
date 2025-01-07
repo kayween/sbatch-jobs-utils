@@ -33,37 +33,40 @@ class Run(object):
         self,
         py_file: str,
         args_dict: dict,
+        output_root_folder: str,
         fmt: str,
         named_args: List,
-        output_folder: str,
     ):
         """
         Args:
             py_file: The python file that executes the run.
             args_dict: The argument dictionary that will be passed to py_file.
+            output_root_folder: A string that determines the output path.
             fmt: The format string that determines the output path.
             named_args: A subset of arguments that are used to create folder names.
+
         """
         self.py_file = py_file
         self.args_dict = args_dict
 
+        self.output_root_folder = output_root_folder
         self.fmt = fmt
         self.named_args = named_args
-        self.output_folder = output_folder
 
     @property
     def output_path(self):
         return os.path.join(
-            self.output_folder,
+            self.output_root_folder,
             self.fmt.format(*[self.args_dict[key] for key in self.named_args]),
         )
 
-    def to_str(self):
-        return " ".join(
+    def to_str(self, use_line_break=True):
+        separator = " \\\n    " if use_line_break else " "
+        return separator.join(
             ["python -u {}".format(self.py_file)] +
             ["--{}={}".format(key, value) for key, value in self.args_dict.items()] +
             ["--output_path={}".format(self.output_path)] +
-            ["> {} 2>&1".format(os.path.join(self.output_path, "std.out"))]
+            ["             >{} 2>&1".format(os.path.join(self.output_path, "std.out"))]
         )
 
 
@@ -78,8 +81,15 @@ class Script(object):
 
     def to_str(self):
         return (
-            self.prologue + "\n" +
-            "\n".join([run.to_str() for run in self.runs]) + "\n" +
+            self.prologue +
+            "\n\n" +
+            "\n\n".join(
+                [
+                    "echo {}\n{}".format(run.to_str(use_line_break=False), run.to_str(use_line_break=True))
+                    for run in self.runs
+                ]
+            ) +
+            "\n\n" +
             self.epilogue + "\n"
         )
 
@@ -171,17 +181,17 @@ def main(config_path: str, num_scripts: int = 0):
     current_folder = os.path.dirname(os.path.realpath(__file__))
 
     # Dumping scripts to ./scripts
-    scripts_folder = os.path.join(current_folder, "scripts", time_stamp)
-    os.mkdir(scripts_folder)
-    create_latest_symlink(scripts_folder)
+    scripts_root_folder = os.path.join(current_folder, "scripts", time_stamp)
+    os.mkdir(scripts_root_folder)
+    create_latest_symlink(scripts_root_folder)
 
     # Dumping experimental results to ./experiments
-    output_folder = os.path.join(current_folder, "experiments", time_stamp)
-    os.mkdir(output_folder)
-    create_latest_symlink(output_folder)
+    output_root_folder = os.path.join(current_folder, "experiments", time_stamp)
+    os.mkdir(output_root_folder)
+    create_latest_symlink(output_root_folder)
 
     lst_runs = [
-        Run(parser.py_file, args_dict, parser.fmt, parser.named_args, output_folder)
+        Run(parser.py_file, args_dict, output_root_folder, parser.fmt, parser.named_args)
         for args_dict in parser.lst_args_dicts
     ]
 
@@ -198,7 +208,7 @@ def main(config_path: str, num_scripts: int = 0):
         os.makedirs(run.output_path)
 
     for i, script in enumerate(lst_scripts):
-        script.write(os.path.join(scripts_folder, "{:d}.sh".format(i)))
+        script.write(os.path.join(scripts_root_folder, "{:d}.sh".format(i)))
 
 
 def generate_scripts(cmd, args):
