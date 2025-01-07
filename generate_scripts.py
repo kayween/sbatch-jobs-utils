@@ -131,7 +131,7 @@ class ConfigFileParser(object):
         Parse the config file and return a list of dictionaries. Each dictionary contains arguments for each run.
         """
         if not self.lst_grouped_args_dicts:
-            cartesian_product(self.shared_args_dict)
+            return cartesian_product(self.shared_args_dict)
 
         lst = []
 
