@@ -29,36 +29,41 @@ class Run(object):
     """
     A single run of experiment.
     """
-    def __init__(self, py_file: str, args_dict: dict, named_args: List, output_folder: str):
+    def __init__(
+        self,
+        py_file: str,
+        args_dict: dict,
+        fmt: str,
+        named_args: List,
+        output_folder: str,
+    ):
         """
         Args:
             py_file: The python file that executes the run.
             args_dict: The argument dictionary that will be passed to py_file.
+            fmt: The format string that determines the output path.
             named_args: A subset of arguments that are used to create folder names.
         """
         self.py_file = py_file
         self.args_dict = args_dict
 
+        self.fmt = fmt
         self.named_args = named_args
         self.output_folder = output_folder
 
     @property
-    def save_loc(self):
+    def output_path(self):
         return os.path.join(
             self.output_folder,
-            # Expand the seed to three digits so that the display is prettier.
-            *[
-                self.args_dict[key] if key != "seed" else "{:03d}".format(self.args_dict[key])
-                for key in self.named_args
-            ],
+            self.fmt.format(*[self.args_dict[key] for key in self.named_args]),
         )
 
     def to_str(self):
         return " ".join(
             ["python -u {}".format(self.py_file)] +
             ["--{}={}".format(key, value) for key, value in self.args_dict.items()] +
-            ["--save_loc={}".format(self.save_loc)] +
-            ["> {} 2>&1".format(os.path.join(self.save_loc, "std.out"))]
+            ["--output_path={}".format(self.output_path)] +
+            ["> {} 2>&1".format(os.path.join(self.output_path, "std.out"))]
         )
 
 
@@ -144,6 +149,10 @@ class ConfigFileParser(object):
         return lst
 
     @property
+    def fmt(self):
+        return self.config_dict['io']['format']
+
+    @property
     def named_args(self):
         return self.config_dict['io']['named_args']
 
@@ -172,7 +181,7 @@ def main(config_path: str, num_scripts: int = 0):
     create_latest_symlink(output_folder)
 
     lst_runs = [
-        Run(parser.py_file, args_dict, parser.named_args, output_folder)
+        Run(parser.py_file, args_dict, parser.fmt, parser.named_args, output_folder)
         for args_dict in parser.lst_args_dicts
     ]
 
@@ -186,7 +195,7 @@ def main(config_path: str, num_scripts: int = 0):
         idx = run.args_dict['seed'] % num_scripts
         lst_scripts[idx].add_run(run)
 
-        os.makedirs(run.save_loc)
+        os.makedirs(run.output_path)
 
     for i, script in enumerate(lst_scripts):
         script.write(os.path.join(scripts_folder, "{:d}.sh".format(i)))

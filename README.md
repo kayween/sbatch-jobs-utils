@@ -1,4 +1,4 @@
-# sbatch jobs utils
+# A Light Weight Repo for Experiment Management
 
 ## folder structure
 ```
@@ -31,3 +31,6 @@ run scripts
 ```
 bash sbatch_folder ../scripts/name-of-job-folder/latest
 ```
+
+## TODOs
+[ ] Improve random ordering
