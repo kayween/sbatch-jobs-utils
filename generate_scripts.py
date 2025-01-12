@@ -31,7 +31,7 @@ class Run(object):
     """
     def __init__(
         self,
-        py_file: str,
+        cmd: str,
         args_dict: dict,
         output_root_folder: str,
         fmt: str,
@@ -39,14 +39,14 @@ class Run(object):
     ):
         """
         Args:
-            py_file: The python file that executes the run.
-            args_dict: The argument dictionary that will be passed to py_file.
+            cmd: The python command to execute.
+            args_dict: The argument dictionary that will be passed to the python command.
             output_root_folder: A string that determines the output path.
             fmt: The format string that determines the output path.
             named_args: A subset of arguments that are used to create folder names.
 
         """
-        self.py_file = py_file
+        self.cmd = cmd
         self.args_dict = args_dict
 
         self.output_root_folder = output_root_folder
@@ -63,7 +63,7 @@ class Run(object):
     def to_str(self, use_line_break=True):
         separator = " \\\n    " if use_line_break else " "
         return separator.join(
-            ["python -u {}".format(self.py_file)] +
+            [self.cmd] +
             ["--{}={}".format(key, value) for key, value in self.args_dict.items()] +
             ["--output_path={}".format(self.output_path)] +
             ["             >{} 2>&1".format(os.path.join(self.output_path, "std.out"))]
@@ -112,11 +112,11 @@ class ConfigFileParser(object):
         return self.config_dict['epilogue']
 
     @property
-    def py_file(self):
+    def cmd(self):
         """
-        The python file that 
+        The python command.
         """
-        return self.config_dict['python']['file']
+        return self.config_dict['python']['cmd']
 
     @cached_property
     def lst_grouped_args_dicts(self):
@@ -191,7 +191,7 @@ def main(config_path: str, num_scripts: int = 0):
     create_latest_symlink(output_root_folder)
 
     lst_runs = [
-        Run(parser.py_file, args_dict, output_root_folder, parser.fmt, parser.named_args)
+        Run(parser.cmd, args_dict, output_root_folder, parser.fmt, parser.named_args)
         for args_dict in parser.lst_args_dicts
     ]
 
