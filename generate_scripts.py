@@ -167,7 +167,7 @@ class ConfigFileParser(object):
         return self.config_dict['io']['named_args']
 
 
-def main(config_path: str, num_scripts: int = 0):
+def main(config_path: str, num_scripts: int = 1):
     """
     Args:
         config_path: Path to the config file.
