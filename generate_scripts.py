@@ -183,12 +183,10 @@ def main(config_path: str, num_scripts: int = 1):
     # Dumping scripts to ./scripts
     scripts_root_folder = os.path.join(current_folder, "scripts", time_stamp)
     os.mkdir(scripts_root_folder)
-    create_latest_symlink(scripts_root_folder)
 
     # Dumping experimental results to ./experiments
     output_root_folder = os.path.join(current_folder, "experiments", time_stamp)
     os.mkdir(output_root_folder)
-    create_latest_symlink(output_root_folder)
 
     lst_runs = [
         Run(parser.cmd, args_dict, output_root_folder, parser.fmt, parser.named_args)
@@ -209,6 +207,10 @@ def main(config_path: str, num_scripts: int = 1):
 
     for i, script in enumerate(lst_scripts):
         script.write(os.path.join(scripts_root_folder, "{:d}.sh".format(i)))
+
+    # create symlinks at the very end
+    create_latest_symlink(scripts_root_folder)
+    create_latest_symlink(output_root_folder)
 
 
 def generate_scripts(cmd, args):
