@@ -1,25 +1,12 @@
 import os
-import shutil
-
-from functools import cached_property
-
-import itertools
-from itertools import product
-
 from typing import List
+from functools import cached_property
 
 import tomlkit
 
-from utils import get_time_stamp
-from utils import create_latest_symlink
-from utils import get_str_cmd_args
-from utils import get_aligned_str
-from utils import get_script_name
-from utils import get_output_folder
-from utils import get_std_output_path
-from utils import get_sbatch_args_with_slurm_output_path
-
 from utils import (
+    get_time_stamp,
+    create_latest_symlink,
     unsqueeze_values,
     cartesian_product,
 )
@@ -211,60 +198,6 @@ def main(config_path: str, num_scripts: int = 1):
     # create symlinks at the very end
     create_latest_symlink(scripts_root_folder)
     create_latest_symlink(output_root_folder)
-
-
-def generate_scripts(cmd, args):
-    script_folder = "{}/{}".format(script_root, get_time_stamp())
-    os.mkdir(script_folder)
-
-    args = list(cmd_args.keys())
-    lsts = [cmd_args[key] for key in cmd_args]
-
-    for vals in itertools.product(*lsts):
-        script_name = get_script_name(cmd, args, vals, named_args)
-
-        script_path = "{}/{}.sh".format(script_folder, script_name)
-
-        output_folder = get_output_folder(output_root, script_name)
-
-        if os.path.exists(output_folder):
-            if overwrite:
-                """CAUTION: existing files in the output folder will be deleted"""
-                shutil.rmtree(output_folder)
-            else:
-                raise Exception("WARNING: existing files in the output folder may be deleted; consider using --overwrite option\nconflict folder: {}".format(output_folder))
-
-        os.mkdir(output_folder)
-
-        std_output_path = get_std_output_path(output_root, script_name)
-
-        str_cmd_args = get_str_cmd_args(args, vals)
-
-        py_cmd = "{} {}".format(cmd, str_cmd_args)
-        print(py_cmd)
-
-        for func in other_args:
-            str_cmd_args += func(output_folder)
-
-        str_cmd_args = "{} --{}".format(str_cmd_args, std_output_path)
-
-        py_cmd = "{} {}".format(cmd, str_cmd_args)
-
-        content = (
-            "{}\n\n".format(get_sbatch_args_with_slurm_output_path(sbatch_args)) +
-            "touch %A\n\n" +
-            "cd {}\n\n".format(root) +
-            get_aligned_str("echo {}\n\n".format(py_cmd), is_echo=True) +
-            get_aligned_str("python {}\n\n".format(py_cmd), is_echo=False) +
-            "echo 'Job Done!'\n"
-        )
-
-        with open(script_path, "w") as f:
-            if verbose:
-                print(script_name)
-            f.write(content)
-
-        create_latest_symlink(script_root, script_folder)
 
 
 if __name__ == "__main__":
