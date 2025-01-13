@@ -154,7 +154,7 @@ class ConfigFileParser(object):
         return self.config_dict['io']['named_args']
 
 
-def main(config_path: str, num_scripts: int = 1):
+def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
     """
     Args:
         config_path: Path to the config file.
@@ -185,19 +185,20 @@ def main(config_path: str, num_scripts: int = 1):
         for i in range(num_scripts)
     ]
 
-    for run in lst_runs:
-        # TODO: Make it less awkward
-        idx = run.args_dict['seed'] % num_scripts
-        lst_scripts[idx].add_run(run)
+    # TODO: Support keys provided by users.
+    lst_runs_sorted = sorted(lst_runs, key=lambda x: x.args_dict['seed'])
 
+    for i, run in enumerate(lst_runs_sorted):
+        lst_scripts[i % num_scripts].add_run(run)
         os.makedirs(run.output_path)
 
     for i, script in enumerate(lst_scripts):
         script.write(os.path.join(scripts_root_folder, "{:d}.sh".format(i)))
 
     # create symlinks at the very end
-    create_latest_symlink(scripts_root_folder)
-    create_latest_symlink(output_root_folder)
+    if symlink:
+        create_latest_symlink(scripts_root_folder)
+        create_latest_symlink(output_root_folder)
 
 
 if __name__ == "__main__":
