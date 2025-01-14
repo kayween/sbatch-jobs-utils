@@ -1,35 +1,27 @@
 # A Light Weight Repo for Experiment Management
 
-## folder structure
+## Folder Structure
 ```
-.
-+-- exps
-|   +-- generate_script.py
-|   +-- job-type-1.py # python script containing arguments for experiments and collect_results()
-|   +-- job-type-2.py
-+-- script
-|   +-- job-type-1 # folder containing slurm scripts generated
-|   +-- job-type-2
-+-- output
-|   +-- job-type-1 # folder containing outputs of experiments e.g. std output 
-|   +-- job-type-2
-+-- slurm
-|   +-- job-type-1 # folder containing slurm outputs
-|   +-- job-type-2
-+-- code1.py
-+-- code2.py
+sbatch-jobs-utils/ # This repository
+├── configs
+├── experiments
+├── scripts
+├── submit
+├── README.md
+├── generate_scripts.py
+└── utils.py
 ```
 
-## work flow
+## Usage
 
 generate scripts
 ```
-python generate_scripts.py job-type-1.py 
+python generate_scripts.py ./configs/CONFIGURATION.toml
 ```
 
 run scripts
 ```
-bash sbatch_folder ../scripts/name-of-job-folder/latest
+bash ./submit/bash.sh ./scripts/latest/
 ```
 
 ## TODOs
