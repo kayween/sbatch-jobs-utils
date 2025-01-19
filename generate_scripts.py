@@ -160,12 +160,13 @@ def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
 
     # Dumping scripts to ./scripts
     scripts_root_folder = os.path.join(current_folder, "scripts", time_stamp)
-    # os.mkdir(scripts_root_folder)
+    os.mkdir(scripts_root_folder)
 
     # Dumping experimental results to ./experiments
     output_root_folder = os.path.join(current_folder, "experiments", time_stamp)
-    # os.mkdir(output_root_folder)
+    os.mkdir(output_root_folder)
 
+    # Generate runs
     lst_runs = [
         Run(parser.cmd, args_dict, output_root_folder, parser.fmt, parser.named_args)
         for args_dict in parser.lst_args_dicts
@@ -176,10 +177,16 @@ def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
         for i in range(num_scripts)
     ]
 
-    # TODO: Support keys provided by users.
-    lst_runs_sorted = sorted(lst_runs, key=lambda x: x.args_dict['seed'])
+    # TODO:
+    # 1. Check the validaty of the config file before writing scripts.
+    # 2. It's not safe to rely on the dictionary ordering in toml files.
+    def value2index(value, lst):
+        return value if not lst else lst.index(value)
 
-    import ipdb; ipdb.set_trace()
+    lst_runs_sorted = sorted(
+        lst_runs,
+        key=lambda x: [value2index(x.args_dict[key], lst) for key, lst in parser.ordering.items()],
+    )
 
     for i, run in enumerate(lst_runs_sorted):
         lst_scripts[i % num_scripts].add_run(run)
