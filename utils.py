@@ -17,6 +17,7 @@ def unsqueeze_values(d: dict):
 
 
 def cartesian_product(d: dict):
+    d = unsqueeze_values(d)
     return [dict(zip(d.keys(), c)) for c in product(*d.values())]
 
 

@@ -61,7 +61,7 @@ class Script(object):
     def __init__(self, prologue: str, epilogue: str, runs: List):
         self.prologue = prologue
         self.epilogue = epilogue
-        self.runs = runs 
+        self.runs = runs
 
     def add_run(self, run: Run):
         self.runs.append(run)
@@ -103,29 +103,15 @@ class ConfigFileParser(object):
         """
         The python command.
         """
-        return self.config_dict['python']['cmd']
+        return self.config_dict['cmd']
 
     @cached_property
     def lst_grouped_args_dicts(self):
-        return [
-            unsqueeze_values(value) for key, value in self.config_dict['arguments'].items()
-            if key.startswith("group")
-        ]
+        return self.config_dict['grouped_arguments']
 
     @cached_property
     def shared_args_dict(self):
-        if 'shared' in self.config_dict['arguments']:
-            # If there is an explicit 'shared' key, then we've found shared arguments
-            shared_args_dict = self.config_dict['arguments']['shared']
-
-        else:
-            # Otherwise, we collect all arguments that are not grouped arguments
-            shared_args_dict = {
-                key: value for key, value in self.config_dict['arguments'].items()
-                if not key.startswith("group")
-            }
-
-        return unsqueeze_values(shared_args_dict)
+        return self.config_dict['arguments']
 
     @cached_property
     def lst_args_dicts(self):
@@ -153,6 +139,10 @@ class ConfigFileParser(object):
     def named_args(self):
         return self.config_dict['io']['named_args']
 
+    @property
+    def ordering(self):
+        return self.config_dict['ordering']
+
 
 def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
     """
@@ -164,16 +154,17 @@ def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
     parser = ConfigFileParser(config_path)
     _ = parser.lst_args_dicts
 
+
     time_stamp = get_time_stamp()
     current_folder = os.path.dirname(os.path.realpath(__file__))
 
     # Dumping scripts to ./scripts
     scripts_root_folder = os.path.join(current_folder, "scripts", time_stamp)
-    os.mkdir(scripts_root_folder)
+    # os.mkdir(scripts_root_folder)
 
     # Dumping experimental results to ./experiments
     output_root_folder = os.path.join(current_folder, "experiments", time_stamp)
-    os.mkdir(output_root_folder)
+    # os.mkdir(output_root_folder)
 
     lst_runs = [
         Run(parser.cmd, args_dict, output_root_folder, parser.fmt, parser.named_args)
@@ -187,6 +178,8 @@ def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
 
     # TODO: Support keys provided by users.
     lst_runs_sorted = sorted(lst_runs, key=lambda x: x.args_dict['seed'])
+
+    import ipdb; ipdb.set_trace()
 
     for i, run in enumerate(lst_runs_sorted):
         lst_scripts[i % num_scripts].add_run(run)
