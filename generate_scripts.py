@@ -107,7 +107,7 @@ class ConfigFileParser(object):
 
     @cached_property
     def lst_grouped_args_dicts(self):
-        return self.config_dict['grouped_arguments']
+        return self.config_dict['grouped_arguments'] if hasattr(self.config_dict, 'grouped_arguments') else []
 
     @cached_property
     def shared_args_dict(self):
