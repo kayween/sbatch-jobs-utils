@@ -26,3 +26,4 @@ bash ./submit/bash.sh ./scripts/latest/
 
 ## TODOs
 [ ] Improve random ordering
+[ ] Fix the bug that the ordering section cannot be empty
