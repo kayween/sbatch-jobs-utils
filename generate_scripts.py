@@ -7,7 +7,6 @@ import tomlkit
 from utils import (
     get_time_stamp,
     create_latest_symlink,
-    unsqueeze_values,
     cartesian_product,
 )
 
@@ -153,7 +152,6 @@ def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
     # Do parsing first---the program terminates immediately if parsing fails
     parser = ConfigFileParser(config_path)
     _ = parser.lst_args_dicts
-
 
     time_stamp = get_time_stamp()
     current_folder = os.path.dirname(os.path.realpath(__file__))
