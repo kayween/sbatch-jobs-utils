@@ -62,9 +62,6 @@ class Script(object):
         self.epilogue = epilogue
         self.runs = runs
 
-    def add_run(self, run: Run):
-        self.runs.append(run)
-
     def to_str(self):
         return (
             self.prologue +
