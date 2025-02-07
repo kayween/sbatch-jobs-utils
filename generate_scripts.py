@@ -153,61 +153,95 @@ class ConfigFileParser(object):
         return self.config_dict['ordering']
 
 
+class ScriptGenerator:
+    def __init__(self, config_path: str, num_scripts: int):
+        # Do parsing first---the program terminates immediately if parsing fails
+        self.parser = ConfigFileParser(config_path)
+        _ = self.parser.lst_args_dicts
+
+        self.num_scripts = num_scripts
+
+        self.time_stamp = get_time_stamp()
+        self.current_folder = os.path.dirname(os.path.realpath(__file__))
+
+    @property
+    def scripts_root_folder(self):
+        """The folder to dump all scripts."""
+        return os.path.join(self.current_folder, "scripts", self.time_stamp)
+
+    @property
+    def output_root_folder(self):
+        """The folder to dump all experimental results."""
+        return os.path.join(self.current_folder, "experiments", self.time_stamp)
+
+    def write(self):
+        os.mkdir(self.scripts_root_folder)
+        self.parser.dump(os.path.join(self.scripts_root_folder, "config.toml"))
+
+        lst_runs = self.make_runs()
+        lst_scripts = self.make_scripts(lst_runs)
+
+        for i, script in enumerate(lst_scripts):
+            script.write(os.path.join(self.scripts_root_folder, "{:d}.sh".format(i)))
+
+        os.mkdir(self.output_root_folder)
+        self.parser.dump(os.path.join(self.output_root_folder, "config.toml"))
+
+        for run in lst_runs:
+            os.makedirs(run.output_path)
+
+    def make_runs(self):
+        lst_runs = [
+            Run(
+                self.parser.cmd,
+                args_dict,
+                self.output_root_folder,
+                self.parser.fmt,
+                self.parser.named_args,
+            ) for args_dict in self.parser.lst_args_dicts
+        ]
+
+        # TODO:
+        # 1. Check the validaty of the config file before writing scripts.
+        # 2. It's not safe to rely on the dictionary ordering in toml files.
+        def value2index(value, lst):
+            return value if not lst else lst.index(value)
+
+        return sorted(
+            lst_runs,
+            key=lambda x: [value2index(x.args_dict[key], lst) for key, lst in self.parser.ordering.items()],
+        )
+
+    def make_scripts(self, lst_runs):
+        return [
+            Script(
+                self.parser.prologue,
+                self.parser.epilogue,
+                [run for j, run in enumerate(lst_runs) if j % self.num_scripts == i],
+            ) for i in range(self.num_scripts)
+        ]
+
+    def make_symlink(self):
+        """
+        TODO: Handle the symlink robustly, e.g., when the latest folder is deleted.
+        """
+        create_latest_symlink(self.scripts_root_folder)
+        create_latest_symlink(self.output_root_folder)
+
+
 def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
     """
     Args:
         config_path: Path to the config file.
         num_scripts: Number of bash scripts to generate.
     """
-    # Do parsing first---the program terminates immediately if parsing fails
-    parser = ConfigFileParser(config_path)
-    _ = parser.lst_args_dicts
 
-    time_stamp = get_time_stamp()
-    current_folder = os.path.dirname(os.path.realpath(__file__))
+    generator = ScriptGenerator(config_path, num_scripts)
+    generator.write()
 
-    # Dumping scripts to ./scripts
-    scripts_root_folder = os.path.join(current_folder, "scripts", time_stamp)
-    os.mkdir(scripts_root_folder)
-    parser.dump(os.path.join(scripts_root_folder, "config.toml"))
-
-    # Dumping experimental results to ./experiments
-    output_root_folder = os.path.join(current_folder, "experiments", time_stamp)
-    os.mkdir(output_root_folder)
-
-    # Generate runs
-    lst_runs = [
-        Run(parser.cmd, args_dict, output_root_folder, parser.fmt, parser.named_args)
-        for args_dict in parser.lst_args_dicts
-    ]
-
-    lst_scripts = [
-        Script(parser.prologue, parser.epilogue, [])
-        for i in range(num_scripts)
-    ]
-
-    # TODO:
-    # 1. Check the validaty of the config file before writing scripts.
-    # 2. It's not safe to rely on the dictionary ordering in toml files.
-    def value2index(value, lst):
-        return value if not lst else lst.index(value)
-
-    lst_runs_sorted = sorted(
-        lst_runs,
-        key=lambda x: [value2index(x.args_dict[key], lst) for key, lst in parser.ordering.items()],
-    )
-
-    for i, run in enumerate(lst_runs_sorted):
-        lst_scripts[i % num_scripts].add_run(run)
-        os.makedirs(run.output_path)
-
-    for i, script in enumerate(lst_scripts):
-        script.write(os.path.join(scripts_root_folder, "{:d}.sh".format(i)))
-
-    # create symlinks at the very end
+    # Create symlinks at the very end
     if symlink:
-        create_latest_symlink(scripts_root_folder)
-        create_latest_symlink(output_root_folder)
+        generator.make_symlink()
 
 
 if __name__ == "__main__":
