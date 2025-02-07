@@ -158,7 +158,7 @@ class ConfigFileParser(object):
 
     @property
     def ordering(self):
-        return self.config_dict['ordering']
+        return self.config_dict['ordering'] if 'ordering' in self.config_dict else None
 
 
 class ScriptGenerator:
@@ -209,16 +209,19 @@ class ScriptGenerator:
             ) for args_dict in self.parser.lst_args_dicts
         ]
 
-        # TODO:
-        # 1. Check the validaty of the config file before writing scripts.
-        # 2. It's not safe to rely on the dictionary ordering in toml files.
-        def value2index(value, lst):
-            return value if not lst else lst.index(value)
+        if self.parser.ordering is None:
+            return lst_runs
+        else:
+            # TODO:
+            # 1. Check the validaty of the config file before writing scripts.
+            # 2. It's not safe to rely on the dictionary ordering in toml files.
+            def value2index(value, lst):
+                return value if not lst else lst.index(value)
 
-        return sorted(
-            lst_runs,
-            key=lambda x: [value2index(x.args_dict[key], lst) for key, lst in self.parser.ordering.items()],
-        )
+            return sorted(
+                lst_runs,
+                key=lambda x: [value2index(x.args_dict[key], lst) for key, lst in self.parser.ordering.items()],
+            )
 
     def make_scripts(self, lst_runs):
         return [
