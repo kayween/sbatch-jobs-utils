@@ -89,6 +89,16 @@ class ConfigFileParser(object):
         with open(config_path, 'rb') as f:
             self.config_dict = tomlkit.load(f)
 
+    def dump(self, path: str):
+        """
+        Dump the entire configuration.
+
+        Args:
+            path: The path to dump configuration.
+        """
+        with open(path, 'w') as f:
+            f.write(tomlkit.dumps(self.config_dict))
+
     @property
     def prologue(self):
         return self.config_dict['prologue']
@@ -159,6 +169,7 @@ def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
     # Dumping scripts to ./scripts
     scripts_root_folder = os.path.join(current_folder, "scripts", time_stamp)
     os.mkdir(scripts_root_folder)
+    parser.dump(os.path.join(scripts_root_folder, "config.toml"))
 
     # Dumping experimental results to ./experiments
     output_root_folder = os.path.join(current_folder, "experiments", time_stamp)
