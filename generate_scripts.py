@@ -106,9 +106,7 @@ class ConfigFileParser(object):
 
     @property
     def cmd(self):
-        """
-        The python command.
-        """
+        """The command to run."""
         return self.config_dict['cmd']
 
     @property
@@ -133,17 +131,17 @@ class ConfigFileParser(object):
         Parse the config file and return a list of dictionaries. Each dictionary contains arguments for each run.
         """
         if not self.lst_grouped_args_dicts:
+            # If there are no grouped arguments, then we only need to enumerate all combinations of the shared arguments
             return cartesian_product(self.shared_args_dict)
 
-        lst = []
-
-        for grouped_args_dict in self.lst_grouped_args_dicts:
-            # Combine grouped arguments and shared arguments and then do a Cartesian product
-            combined_args_dict = dict(**grouped_args_dict, **self.shared_args_dict)
-
-            lst += cartesian_product(combined_args_dict)
-
-        return lst
+        else:
+            # Otherwise, combine grouped arguments and shared arguments and then do a Cartesian product
+            # Nested comprehension makes it unreadable. But it looks cooler than itertools.chain.
+            return [
+                args_dict
+                for grouped_args_dict in self.lst_grouped_args_dicts
+                for args_dict in cartesian_product(dict(**grouped_args_dict, **self.shared_args_dict))
+            ]
 
     @property
     def fmt(self):
@@ -162,8 +160,6 @@ class ScriptGenerator:
     def __init__(self, config_path: str, num_scripts: int):
         # Do parsing first---the program terminates immediately if parsing fails
         self.parser = ConfigFileParser(config_path)
-        _ = self.parser.lst_args_dicts
-
         self.num_scripts = num_scripts
 
         self.time_stamp = get_time_stamp()
@@ -180,11 +176,11 @@ class ScriptGenerator:
         return os.path.join(self.current_folder, "experiments", self.time_stamp)
 
     def write(self):
-        os.mkdir(self.scripts_root_folder)
-        self.parser.dump(os.path.join(self.scripts_root_folder, "config.toml"))
-
         lst_runs = self.make_runs()
         lst_scripts = self.make_scripts(lst_runs)
+
+        os.mkdir(self.scripts_root_folder)
+        self.parser.dump(os.path.join(self.scripts_root_folder, "config.toml"))
 
         for i, script in enumerate(lst_scripts):
             script.write(os.path.join(self.scripts_root_folder, "{:d}.sh".format(i)))
@@ -197,13 +193,8 @@ class ScriptGenerator:
 
     def make_runs(self):
         lst_runs = [
-            Run(
-                self.parser.cmd,
-                args_dict,
-                self.output_root_folder,
-                self.parser.fmt,
-                self.parser.named_args,
-            ) for args_dict in self.parser.lst_args_dicts
+            Run(self.parser.cmd, args_dict, self.output_root_folder, self.parser.fmt, self.parser.named_args)
+            for args_dict in self.parser.lst_args_dicts
         ]
 
         if self.parser.ordering is None:
