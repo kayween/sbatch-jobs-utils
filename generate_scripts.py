@@ -114,6 +114,14 @@ class ConfigFileParser(object):
         """
         return self.config_dict['cmd']
 
+    @property
+    def git_repo_hash(self):
+        raise NotImplementedError
+
+    @property
+    def git_repo_commit_msg(self):
+        raise NotImplementedError
+
     @cached_property
     def lst_grouped_args_dicts(self):
         return self.config_dict['grouped_arguments'] if 'grouped_arguments' in self.config_dict else []
