@@ -166,34 +166,38 @@ class ScriptGenerator:
         self.current_folder = os.path.dirname(os.path.realpath(__file__))
 
     @property
-    def scripts_root_folder(self):
-        """The folder to dump all scripts."""
-        return os.path.join(self.current_folder, "scripts", self.time_stamp)
+    def root_folder(self):
+        """The root folder to dump everything."""
+        return os.path.join(self.current_folder, "experiments", self.time_stamp)
 
     @property
-    def output_root_folder(self):
-        """The folder to dump all experimental results."""
-        return os.path.join(self.current_folder, "experiments", self.time_stamp)
+    def scripts_folder(self):
+        """The folder to dump all scripts."""
+        return os.path.join(self.root_folder, "scripts")
+
+    @property
+    def outputs_folder(self):
+        """The folder to dump all runs."""
+        return os.path.join(self.root_folder, "outputs")
 
     def write(self):
         lst_runs = self.make_runs()
         lst_scripts = self.make_scripts(lst_runs)
 
-        os.mkdir(self.scripts_root_folder)
-        self.parser.dump(os.path.join(self.scripts_root_folder, "config.toml"))
+        os.mkdir(self.root_folder)
+        self.parser.dump(os.path.join(self.root_folder, "config.toml"))
 
+        os.mkdir(self.scripts_folder)
         for i, script in enumerate(lst_scripts):
-            script.write(os.path.join(self.scripts_root_folder, "{:d}.sh".format(i)))
+            script.write(os.path.join(self.scripts_folder,  "{:d}.sh".format(i)))
 
-        os.mkdir(self.output_root_folder)
-        self.parser.dump(os.path.join(self.output_root_folder, "config.toml"))
-
+        os.mkdir(self.outputs_folder)
         for run in lst_runs:
             os.makedirs(run.output_path)
 
     def make_runs(self):
         lst_runs = [
-            Run(self.parser.cmd, args_dict, self.output_root_folder, self.parser.fmt, self.parser.named_args)
+            Run(self.parser.cmd, args_dict, self.outputs_folder, self.parser.fmt, self.parser.named_args)
             for args_dict in self.parser.lst_args_dicts
         ]
 
@@ -224,8 +228,7 @@ class ScriptGenerator:
         """
         TODO: Handle the symlink robustly, e.g., when the latest folder is deleted.
         """
-        create_latest_symlink(self.scripts_root_folder)
-        create_latest_symlink(self.output_root_folder)
+        create_latest_symlink(self.root_folder)
 
 
 def main(config_path: str, num_scripts: int = 1, symlink: bool = True):
