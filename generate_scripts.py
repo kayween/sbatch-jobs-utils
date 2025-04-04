@@ -97,6 +97,10 @@ class ConfigFileParser(object):
             f.write(tomlkit.dumps(self.config_dict))
 
     @property
+    def root(self):
+        return self.config_dict['root'] if "root" in self.config_dict else None
+
+    @property
     def prologue(self):
         return self.config_dict['prologue']
 
@@ -163,12 +167,15 @@ class ScriptGenerator:
         self.num_scripts = num_scripts
 
         self.time_stamp = get_time_stamp()
-        self.current_folder = os.path.dirname(os.path.realpath(__file__))
 
     @property
     def root_folder(self):
         """The root folder to dump everything."""
-        return os.path.join(self.current_folder, "experiments", self.time_stamp)
+        if self.parser.root is not None:
+            return os.path.join(self.parser.root, self.time_stamp)
+        else:
+            current_folder = os.path.dirname(os.path.realpath(__file__))
+            return os.path.join(current_folder, "experiments", self.time_stamp)
 
     @property
     def scripts_folder(self):
