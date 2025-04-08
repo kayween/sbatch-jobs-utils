@@ -223,12 +223,14 @@ class ScriptGenerator:
             )
 
     def make_scripts(self, lst_runs):
+        num_scripts = self.num_scripts if self.num_scripts > 0 else len(lst_runs)
+
         return [
             Script(
                 self.parser.prologue,
                 self.parser.epilogue,
-                [run for j, run in enumerate(lst_runs) if j % self.num_scripts == i],
-            ) for i in range(self.num_scripts)
+                [run for j, run in enumerate(lst_runs) if j % num_scripts == i],
+            ) for i in range(num_scripts)
         ]
 
     def make_symlink(self):
