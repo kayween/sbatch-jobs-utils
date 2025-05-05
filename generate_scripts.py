@@ -48,12 +48,20 @@ class Run(object):
 
     def to_str(self, use_line_break=True):
         separator = " \\\n    " if use_line_break else " "
-        return separator.join(
-            [self.cmd] +
-            ["--{}={}".format(key, value) for key, value in self.args_dict.items()] +
-            ["--output_path={}".format(self.output_path)] +
-            ["             >{} 2>&1".format(os.path.join(self.output_path, "std.out"))]
-        )
+
+        if True:
+            return separator.join(
+                [self.cmd.format(**self.args_dict, output_path=self.output_path)] +
+                [">{} 2>&1".format(os.path.join(self.output_path, "std.out"))]
+            )
+
+        else:
+            return separator.join(
+                [self.cmd] +
+                ["--{}={}".format(key, value) for key, value in self.args_dict.items()] +
+                ["--output_path={}".format(self.output_path)] +
+                ["             >{} 2>&1".format(os.path.join(self.output_path, "std.out"))]
+            )
 
 
 class Script(object):
